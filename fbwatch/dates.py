@@ -23,7 +23,7 @@ _MD_RE = re.compile(r"^([^\W\d_]+)\.?\s+(\d{1,2})(?:\s|$|,)", re.UNICODE)
 _NUMERIC_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
 _ISO_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?")
 _RELATIVE_RE = re.compile(
-    r"^(\d+)\s*(λεπτ\w*|ώρ\w*|ωρ\w*|ημέρ\w*|μέρ\w*|εβδ\w*|m|min\w*|h|hr\w*|hour\w*|d|day\w*|w|wk\w*|week\w*)\b",
+    r"^(\d+)\s*(λεπτ\w*|ώρ\w*|ωρ\w*|ημέρ\w*|ημερ\w*|μέρ\w*|μερ\w*|εβδ\w*|m|min\w*|h|hr\w*|hour\w*|d|day\w*|w|wk\w*|week\w*)\b",
     re.IGNORECASE,
 )
 
@@ -110,7 +110,12 @@ def parse_facebook_date(
     if low.startswith(("σημερα", "today")):
         return _apply_time(now.replace(hour=0, minute=0, second=0, microsecond=0), raw)
 
-    m = _RELATIVE_RE.match(low)
+    # "πριν από 13 λεπτά", "πριν από μία ώρα περίπου", "about an hour ago", "2 days ago"
+    rel = low
+    rel = re.sub(r"^(πριν\s+απο|πριν|about|around|περιπου)\s+", "", rel)
+    rel = re.sub(r"\s+(ago|περιπου|πριν)$", "", rel)
+    rel = re.sub(r"^(μια|μία|ενα|ένα|one|an|a)\s+", "1 ", rel)
+    m = _RELATIVE_RE.match(rel)
     if m:
         n = int(m.group(1))
         unit = m.group(2)

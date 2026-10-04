@@ -55,3 +55,18 @@ def test_parse_user_date():
     assert parse_user_date("2026-10-04 08:30").hour == 8
     with pytest.raises(ValueError):
         parse_user_date("4 Οκτ 2026")
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("πριν από 13 λεπτά", "2026-10-04T11:47:00+03:00"),
+        ("πριν από μία ώρα περίπου", "2026-10-04T11:00:00+03:00"),
+        ("πριν από 2 ημέρες", "2026-10-02T12:00:00+03:00"),
+        ("about an hour ago", "2026-10-04T11:00:00+03:00"),
+        ("13 minutes ago", "2026-10-04T11:47:00+03:00"),
+        ("πριν από μία εβδομάδα", "2026-09-27T12:00:00+03:00"),
+    ],
+)
+def test_parse_relative_phrases(text, expected):
+    assert parse_facebook_date(text, now=NOW).isoformat(timespec="seconds") == expected
