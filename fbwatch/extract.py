@@ -251,8 +251,13 @@ def scroll_down(target, settle_ms: int) -> dict:
     Επιστρέφει {"grew": bool, "before": int, "after": int, "scrollers": int, "inner_before": int, "inner_after": int}.
     """
     info = target.evaluate(SCROLL_JS)
+    page = target.page if hasattr(target, "page") else target
     try:
-        target.page.keyboard.press("End") if hasattr(target, "page") else target.keyboard.press("End")
+        # Πραγματικά input events (μέσω CDP), όχι μόνο synthetic: κάποια widgets φορτώνουν μόνο έτσι.
+        vp = page.viewport_size or {"width": 500, "height": 1000}
+        page.mouse.move(vp["width"] // 2, vp["height"] // 2)
+        page.mouse.wheel(0, 4000)
+        page.keyboard.press("End")
     except Exception:  # noqa: BLE001
         pass
     target.wait_for_timeout(settle_ms)
