@@ -1,36 +1,52 @@
-# fbwatch - παράδειγμα ρυθμίσεων. Αντέγραψέ το σε config.yaml (ή τρέξε: fbwatch init)
+# ======================================================================
+#  fbwatch - ΡΥΘΜΙΣΕΙΣ
+#
+#  Το μόνο που χρειάζεται να αλλάξεις είναι η λίστα "sources" αμέσως πιο κάτω:
+#  οι δημόσιες σελίδες (Pages) του Facebook που θέλεις να παρακολουθείς.
+#
+#  Για κάθε σελίδα γράψε 4 γραμμές, όπως στα παραδείγματα:
+#    id:    ένα σύντομο όνομα με λατινικά γράμματα, χωρίς κενά (γίνεται όνομα φακέλου)
+#    kind:  άφησέ το "page"
+#    url:   η διεύθυνση της σελίδας όπως τη βλέπεις στον browser
+#    label: το όνομα όπως θέλεις να εμφανίζεται (ελληνικά επιτρέπονται)
+#
+#  Για να προσθέσεις σελίδα, αντέγραψε τις 4 γραμμές και άλλαξε τα στοιχεία.
+#  Για να αφαιρέσεις, σβήσε τις 4 γραμμές της. Πρόσεξε να μείνουν τα κενά στην αρχή.
+# ======================================================================
 
-# Φάκελος όπου αποθηκεύονται βάση, screenshots, HTML και εξαγωγές (σχετικά με αυτό το αρχείο).
-data_dir: ./data
-timezone: Europe/Athens
-
-browser:
-  headless: true          # false = ορατό παράθυρο (χρήσιμο στην πρώτη δοκιμή)
-  locale: el-GR           # γλώσσα εμφάνισης του Facebook plugin
-  settle_ms: 1500         # αναμονή μετά από scroll / πριν από screenshot
-  executable_path: null   # διαδρομή σε δικό σου Chrome/Chromium, αλλιώς αυτός του Playwright
-  viewport_width: 560
-  viewport_height: 1400
-
-monitor:
-  max_posts_per_run: 50       # ανώτατο πλήθος posts ανά πηγή σε κάθε εκτέλεση
-  max_scroll_rounds: 30       # πόσες φορές να κάνει scroll για φόρτωση παλαιότερων
-  recapture_existing: false   # true = νέο screenshot και για ήδη γνωστά posts (ιστορικό αλλαγών)
-  delay_between_sources_s: [5, 15]   # τυχαία παύση ανάμεσα σε πηγές
-  save_html: true             # αποθήκευση και του HTML κάθε post δίπλα στο screenshot
-
-archive:
-  enabled: false     # true = μετά από κάθε run ζητείται snapshot στο archive.org
-  wayback: true
-  timeout_s: 90
-
-# Οι πηγές. kind: page = δημόσια Facebook Page (timeline μέσω Page Plugin, χωρίς login).
 sources:
   - id: ertnews
     kind: page
     url: https://www.facebook.com/ertnews
     label: ΕΡΤ News
+
   - id: in_gr
     kind: page
     url: https://www.facebook.com/in.gr
     label: in.gr
+
+
+# ---------- Από εδώ και κάτω δεν χρειάζεται να αλλάξεις κάτι ----------
+
+data_dir: ./data          # φάκελος για βάση, screenshots, εξαγωγές
+timezone: Europe/Athens
+
+browser:
+  headless: true          # false = ορατό παράθυρο browser σε κάθε εκτέλεση
+  locale: el-GR           # γλώσσα του Facebook plugin
+  settle_ms: 1500         # αναμονή (ms) μετά από scroll / πριν από screenshot
+  executable_path: null   # δικός σου Chrome/Chromium, αλλιώς αυτός του Playwright
+  viewport_width: 560
+  viewport_height: 1400
+
+monitor:
+  max_posts_per_run: 50             # ανώτατο πλήθος posts ανά σελίδα σε κάθε εκτέλεση
+  max_scroll_rounds: 30             # πόσες φορές να κάνει scroll για παλαιότερα posts
+  recapture_existing: false         # true = νέο screenshot και για ήδη γνωστά posts
+  delay_between_sources_s: [5, 15]  # τυχαία παύση (δευτ.) ανάμεσα σε σελίδες
+  save_html: true                   # αποθήκευση και του HTML κάθε post
+
+archive:
+  enabled: false     # true = μετά από κάθε συλλογή ζητείται snapshot στο archive.org
+  wayback: true
+  timeout_s: 90
