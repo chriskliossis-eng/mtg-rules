@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fbwatch"
+version = "0.1.0"
+description = "Συλλογή και screenshot δημόσιων posts από Facebook Pages χωρίς login (Page Plugin / Post Embed)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "playwright>=1.45",
+    "pyyaml>=6.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+fbwatch = "fbwatch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fbwatch*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

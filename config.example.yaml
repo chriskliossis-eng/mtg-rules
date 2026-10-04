@@ -1,0 +1,36 @@
+# fbwatch - παράδειγμα ρυθμίσεων. Αντέγραψέ το σε config.yaml (ή τρέξε: fbwatch init)
+
+# Φάκελος όπου αποθηκεύονται βάση, screenshots, HTML και εξαγωγές (σχετικά με αυτό το αρχείο).
+data_dir: ./data
+timezone: Europe/Athens
+
+browser:
+  headless: true          # false = ορατό παράθυρο (χρήσιμο στην πρώτη δοκιμή)
+  locale: el-GR           # γλώσσα εμφάνισης του Facebook plugin
+  settle_ms: 1500         # αναμονή μετά από scroll / πριν από screenshot
+  executable_path: null   # διαδρομή σε δικό σου Chrome/Chromium, αλλιώς αυτός του Playwright
+  viewport_width: 560
+  viewport_height: 1400
+
+monitor:
+  max_posts_per_run: 50       # ανώτατο πλήθος posts ανά πηγή σε κάθε εκτέλεση
+  max_scroll_rounds: 30       # πόσες φορές να κάνει scroll για φόρτωση παλαιότερων
+  recapture_existing: false   # true = νέο screenshot και για ήδη γνωστά posts (ιστορικό αλλαγών)
+  delay_between_sources_s: [5, 15]   # τυχαία παύση ανάμεσα σε πηγές
+  save_html: true             # αποθήκευση και του HTML κάθε post δίπλα στο screenshot
+
+archive:
+  enabled: false     # true = μετά από κάθε run ζητείται snapshot στο archive.org
+  wayback: true
+  timeout_s: 90
+
+# Οι πηγές. kind: page = δημόσια Facebook Page (timeline μέσω Page Plugin, χωρίς login).
+sources:
+  - id: ertnews
+    kind: page
+    url: https://www.facebook.com/ertnews
+    label: ΕΡΤ News
+  - id: in_gr
+    kind: page
+    url: https://www.facebook.com/in.gr
+    label: in.gr

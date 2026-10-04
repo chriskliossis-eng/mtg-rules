@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="el"><head><meta charset="utf-8"><title>Fixture: Page Plugin timeline</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;width:500px}
+.userContentWrapper{border:1px solid #ddd;margin:8px;padding:10px;background:#fff;min-height:520px}
+.userContent{margin:8px 0}
+img{display:block;width:100%;height:120px;background:#9ab}
+.ts{color:#666;font-size:12px}
+</style></head>
+<body>
+<div id="timeline">
+  <div class="userContentWrapper" id="p1">
+    <h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <div class="ts"><a class="_5pcq" href="/ertnews/posts/1001?__cft__[0]=abc&__tn__=-R"><abbr data-utime="1759564800" title="Σάββατο 4 Οκτωβρίου 2025 στις 11:00 π.μ.">4 Οκτ</abbr></a></div>
+    <div class="userContent"><p>Πρώτο δημόσιο post με κείμενο.</p></div>
+    <img alt="">
+  </div>
+  <div class="userContentWrapper" id="p2">
+    <h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <div class="ts"><a class="_5pcq" href="https://www.facebook.com/permalink.php?story_fbid=2002&id=555&__tn__=x"><abbr data-utime="1759478400" title="Παρασκευή 3 Οκτωβρίου 2025 στις 11:00 π.μ.">3 Οκτ</abbr></a></div>
+    <div class="userContent"><p>Δεύτερο post, με link <a href="https://example.org">εδώ</a>.</p></div>
+  </div>
+  <div class="userContentWrapper" id="p3">
+    <h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <div class="ts"><a class="_5pcq" href="/ertnews/videos/3003/"><abbr title="Τετάρτη 1 Οκτωβρίου 2025 στις 9:30 μ.μ.">1 Οκτ</abbr></a></div>
+    <div class="userContent"><p>Τρίτο post (βίντεο) χωρίς data-utime, μόνο title.</p></div>
+  </div>
+</div>
+<script>
+// Προσομοίωση lazy load: στο πρώτο scroll στο τέλος προστίθενται δύο ακόμη posts.
+let loaded = false;
+window.addEventListener('scroll', () => {
+  if (loaded) return;
+  if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 5) {
+    loaded = true;
+    const t = document.getElementById('timeline');
+    t.insertAdjacentHTML('beforeend', `
+  <div class="userContentWrapper" id="p4">
+    <h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <div class="ts"><a class="_5pcq" href="/ertnews/posts/4004"><abbr data-utime="1758960000" title="Σάββατο 27 Σεπτεμβρίου 2025 στις 11:00 π.μ.">27 Σεπ</abbr></a></div>
+    <div class="userContent"><p>Τέταρτο post, φορτώθηκε με scroll.</p></div>
+    <img alt="">
+  </div>
+  <div class="userContentWrapper" id="p5">
+    <h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <div class="ts"><a class="_5pcq" href="/ertnews/posts/1001"><abbr data-utime="1759564800">4 Οκτ</abbr></a></div>
+    <div class="userContent"><p>ΔΙΠΛΟΤΥΠΟ του πρώτου post (ίδιο permalink), δεν πρέπει να μετρηθεί δύο φορές.</p></div>
+  </div>`);
+  }
+});
+</script>
+</body></html>
