@@ -53,6 +53,8 @@ class Source:
     plugin_url: Optional[str] = None  # override, κυρίως για tests
 
     def __post_init__(self) -> None:
+        self.id = str(self.id)
+        self.url = str(self.url)
         if not re.fullmatch(r"[A-Za-z0-9_.-]+", self.id):
             raise ConfigError(
                 f"Μη έγκυρο id πηγής '{self.id}': επιτρέπονται μόνο λατινικά, αριθμοί, '_', '-', '.'"

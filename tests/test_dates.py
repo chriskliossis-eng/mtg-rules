@@ -70,3 +70,9 @@ def test_parse_user_date():
 )
 def test_parse_relative_phrases(text, expected):
     assert parse_facebook_date(text, now=NOW).isoformat(timespec="seconds") == expected
+
+
+def test_iso_with_offset_is_converted_not_relabelled():
+    assert parse_facebook_date("2026-10-04T07:15:00Z", now=NOW).isoformat() == "2026-10-04T10:15:00+03:00"
+    assert parse_facebook_date("2026-10-04T07:15:00+00:00", now=NOW).isoformat() == "2026-10-04T10:15:00+03:00"
+    assert parse_facebook_date("2026-10-04T10:15:00", now=NOW).isoformat() == "2026-10-04T10:15:00+03:00"

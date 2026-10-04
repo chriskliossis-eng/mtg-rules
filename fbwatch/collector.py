@@ -184,8 +184,8 @@ def collect_source(
         if dump_dir is not None:
             dump_dir.mkdir(parents=True, exist_ok=True)
             stem = dump_dir / f"{_safe_name(source.id)}_{when:%Y%m%d_%H%M%S}"
-            stem.with_suffix(".html").write_text(page.content(), encoding="utf-8")
-            page.screenshot(path=str(stem.with_suffix(".png")), full_page=True)
+            stem.with_name(stem.name + ".html").write_text(page.content(), encoding="utf-8")
+            page.screenshot(path=str(stem.with_name(stem.name + ".png")), full_page=True)
             say(f"[{source.id}] Αποθηκεύτηκαν για διάγνωση: {stem}.html / .png")
         if result.status.kind != "ok":
             say(f"[{source.id}] {result.status.kind}: {result.status.detail}")
@@ -203,15 +203,22 @@ def collect_source(
             return result
         storage.upsert_source(source.id, source.kind, source.url, source.label)
         for p in ordered:
-            p = by_id.get(p.post_id, p)
             if stop_before and p.posted_at and p.posted_at < stop_before:
                 continue
+            current = by_id.get(p.post_id)
+            if current is None:
+                # Το post δεν είναι πλέον στο DOM (το plugin το ξεφόρτωσε). Ποτέ screenshot με παλιό marker.
+                if not storage.has_post(p.post_id):
+                    msg = f"{p.post_id}: δεν είναι πλέον ορατό στη σελίδα, παραλείπεται (θα ληφθεί σε επόμενη εκτέλεση)"
+                    result.errors.append(msg)
+                    say(f"  ΠΡΟΣΟΧΗ {msg}")
+                continue
             try:
-                _store(p, source, settings, storage, target, when, result)
+                _store(current, source, settings, storage, target, when, result)
             except Exception as e:  # ένα post δεν πρέπει να ρίχνει όλη την εκτέλεση
                 msg = f"{p.post_id}: {type(e).__name__}: {e}"
                 result.errors.append(msg)
-                log.warning("  ΣΦΑΛΜΑ %s", msg)
+                say(f"  ΣΦΑΛΜΑ {msg}")
         return result
     finally:
         page.close()

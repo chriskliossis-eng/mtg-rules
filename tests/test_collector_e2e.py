@@ -106,3 +106,27 @@ def test_no_more_posts_message(browser_context, settings, storage):
     msgs = []
     collect_source(browser_context, _page_source(), settings, storage, progress=msgs.append)
     assert any("δεν έδωσε παλαιότερα posts" in m for m in msgs)
+
+
+def test_markers_are_fresh_on_every_find(browser_context):
+    """Παλιοί markers αφαιρούνται και κάθε κλήση έχει δικό της πρόθεμα: ποτέ screenshot λάθος post."""
+    from fbwatch.extract import find_posts
+
+    page = browser_context.new_page()
+    page.goto(fixture_url("page_plugin.html"))
+    first = find_posts(page, "Europe/Athens")
+    second = find_posts(page, "Europe/Athens")
+    assert {p.marker for p in first}.isdisjoint({p.marker for p in second})
+    for p in first:
+        assert page.locator(f"[data-fbwatch-id='{p.marker}']").count() == 0
+    for p in second:
+        assert page.locator(f"[data-fbwatch-id='{p.marker}']").count() == 1
+    page.close()
+
+
+def test_dotted_source_id_files_keep_full_name(browser_context, settings, storage):
+    src = Source(id="in.gr", url="https://www.facebook.com/in.gr", label="in.gr", plugin_url=fixture_url("page_plugin.html"))
+    dump = settings.data_dir / "debug"
+    collect_source(browser_context, src, settings, storage, dry_run=True, dump_dir=dump, progress=lambda m: None)
+    names = sorted(p.name for p in dump.iterdir())
+    assert all(n.startswith("in.gr_") and n.endswith((".html", ".png")) for n in names), names

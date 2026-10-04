@@ -163,9 +163,13 @@ class Storage:
         self.conn.execute(f"UPDATE posts SET {sets} WHERE post_id=?", (*fields.values(), post_id))
         self.conn.commit()
 
-    def posts_without_archive(self, limit: int = 50) -> list[PostRecord]:
+    def posts_without_archive(self, limit: int = 50, retry_after_hours: int = 24, now: Optional[str] = None) -> list[PostRecord]:
+        """Posts χωρίς snapshot. Αποτυχημένες προσπάθειες ξαναδοκιμάζονται μόνο μετά από retry_after_hours."""
+        from datetime import datetime as _dt, timedelta, timezone as _tz
+        cutoff = (_dt.fromisoformat(now) if now else _dt.now(_tz.utc)) - timedelta(hours=retry_after_hours)
         rows = self.conn.execute(
-            "SELECT * FROM posts WHERE archive_url IS NULL ORDER BY first_seen DESC LIMIT ?", (limit,)
+            "SELECT * FROM posts WHERE archive_url IS NULL AND (archive_requested_at IS NULL OR archive_requested_at < ?) "
+            "ORDER BY first_seen DESC LIMIT ?", (cutoff.isoformat(timespec="seconds"), limit)
         )
         return [PostRecord(**dict(r)) for r in rows]
 

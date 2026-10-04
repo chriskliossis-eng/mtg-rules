@@ -380,8 +380,13 @@ class App(tk.Tk):
                 for src in sources:
                     if self._stop:
                         break
-                    res = collect_source(ctx, src, self.settings, None, dry_run=True, progress=self.say,
-                                         dump_dir=self.settings.data_dir / "debug")
+                    try:
+                        res = collect_source(ctx, src, self.settings, None, dry_run=True, progress=self.say,
+                                             dump_dir=self.settings.data_dir / "debug")
+                    except Exception as e:  # noqa: BLE001  μία σελίδα δεν σταματά τις υπόλοιπες
+                        self.say(f"[{src.id}] ΣΦΑΛΜΑ: {type(e).__name__}: {e}")
+                        self.q.put(("status", (src.id, "σφάλμα")))
+                        continue
                     st = f"{res.status.kind} ({res.posts_seen})" if res.status.kind == "ok" else res.status.kind
                     self.q.put(("status", (src.id, st)))
 
@@ -430,8 +435,15 @@ class App(tk.Tk):
                 for i, src in enumerate(sources):
                     if self._stop:
                         break
-                    res = collect_source(ctx, src, self.settings, storage, progress=self.say)
+                    try:
+                        res = collect_source(ctx, src, self.settings, storage, progress=self.say)
+                    except Exception as e:  # noqa: BLE001
+                        self.say(f"[{src.id}] ΣΦΑΛΜΑ: {type(e).__name__}: {e}")
+                        self.q.put(("status", (src.id, "σφάλμα")))
+                        continue
                     total += res.posts_new
+                    if res.errors:
+                        self.say(f"[{src.id}] {len(res.errors)} posts με πρόβλημα (δες πιο πάνω)")
                     st = f"{res.status.kind} ({res.posts_seen})" if res.status.kind == "ok" else res.status.kind
                     self.q.put(("status", (src.id, st)))
                     if i < len(sources) - 1:

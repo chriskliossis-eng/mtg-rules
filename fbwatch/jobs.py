@@ -86,11 +86,13 @@ def run_job(
                                        res.posts_seen, res.posts_new, "; ".join(res.errors)[:1000])
                     result.source_results.append(res)
                     result.posts_new += res.posts_new
+                    if res.errors:
+                        say(f"[{src.id}] {len(res.errors)} posts με πρόβλημα")
                     if i < len(sources) - 1:
                         pause_between_sources(settings)
 
         posts = storage.query_posts(source_ids=[s.id for s in sources] or None, date_from=date_from, date_to=date_to,
-                                    include_undated=False)
+                                    include_undated=True)  # posts χωρίς αναγνωρισμένη ημερομηνία εμφανίζονται σημειωμένα, δεν χάνονται
         result.posts_count = len(posts)
         say(f"Στο διάστημα βρέθηκαν {len(posts)} posts. Δημιουργία αρχείων...")
 
@@ -107,11 +109,10 @@ def run_job(
         label = ", ".join(s.label or s.id for s in sources) if sources else "όλες οι σελίδες"
         subtitle = _period_text(date_from, date_to)
         title = f"Έλεγχος: {name}"
-        base = folder / "posts"
-        result.files.append(export_csv(posts, base.with_suffix(".csv")))
-        result.files.append(export_json(posts, base.with_suffix(".json"), {
+        result.files.append(export_csv(posts, folder / "posts.csv"))
+        result.files.append(export_json(posts, folder / "posts.json", {
             "job": name, "sources": [s.id for s in sources], "from": to_iso(date_from), "to": to_iso(date_to)}))
-        html_path = export_html(posts, settings, folder / "anafora.html", title, f"{label} · {subtitle}")
+        html_path = export_html(posts, settings, folder / "anafora.html", title, f"{label} · {subtitle}", img_dir="screenshots")
         result.files.append(html_path)
         if make_pdf and posts:
             result.files.append(export_pdf(html_path, folder / "anafora.pdf", settings))

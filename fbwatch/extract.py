@@ -33,6 +33,9 @@ _PERMALINK_JS_RE = r"(\/posts\/|story_fbid=|\/permalink\.php|\/photos\/|\/videos
 
 FIND_POSTS_JS = r"""
 (args) => {
+  // Καθάρισε markers από προηγούμενες κλήσεις: ποτέ ένας παλιός marker δεν πρέπει να δείχνει άλλο post.
+  for (const el of document.querySelectorAll('[data-fbwatch-id]')) el.removeAttribute('data-fbwatch-id');
+  const prefix = 'fbw_' + Date.now().toString(36) + '_';
   const permalinkRe = new RegExp(args.permalinkRe);
   const idRe = /(story_fbid=\d+|[?&]fbid=\d+|\/posts\/[A-Za-z0-9_-]+|\/(videos|reel|watch)\/(?:[^/]+\/)?\d+|\/photos\/(?:[^/]+\/)*\d+)/;
   const idOf = (href) => { const m = href.match(idRe); return m ? m[0] : href.split('?')[0]; };
@@ -115,7 +118,7 @@ FIND_POSTS_JS = r"""
       if (a) author = a.textContent.trim();
     }
 
-    const marker = 'fbw_' + (idx++);
+    const marker = prefix + (idx++);
     c.setAttribute('data-fbwatch-id', marker);
     const rect = c.getBoundingClientRect();
     results.push({marker, href, utime, timeText, timeTitle, text, author,

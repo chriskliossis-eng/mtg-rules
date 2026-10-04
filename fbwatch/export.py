@@ -35,7 +35,8 @@ def export_json(posts: Iterable[PostRecord], path: Path, meta: Optional[dict] = 
     return path
 
 
-def build_html_report(posts: list[PostRecord], settings: Settings, title: str, subtitle: str = "") -> str:
+def build_html_report(posts: list[PostRecord], settings: Settings, title: str, subtitle: str = "", img_dir: Optional[str] = None) -> str:
+    """img_dir: αν δοθεί, οι εικόνες αναφέρονται σχετικά ως <img_dir>/<όνομα αρχείου> (αυτοτελής φάκελος)."""
     def esc(s: Optional[str]) -> str:
         return html.escape(s or "")
 
@@ -43,8 +44,11 @@ def build_html_report(posts: list[PostRecord], settings: Settings, title: str, s
     for p in posts:
         img = ""
         if p.screenshot_path:
-            abs_path = (settings.data_dir / p.screenshot_path).resolve()
-            img = f'<img src="{abs_path.as_uri()}" alt="screenshot {esc(p.post_id)}">'
+            if img_dir:
+                src = f"{img_dir}/{Path(p.screenshot_path).name}"
+            else:
+                src = (settings.data_dir / p.screenshot_path).resolve().as_uri()
+            img = f'<img src="{esc(src)}" alt="screenshot {esc(p.post_id)}">'
         archive = f'<div><b>Archive:</b> <a href="{esc(p.archive_url)}">{esc(p.archive_url)}</a></div>' if p.archive_url else ""
         rows.append(f"""
 <section class="post">
@@ -81,9 +85,9 @@ def build_html_report(posts: list[PostRecord], settings: Settings, title: str, s
 </body></html>"""
 
 
-def export_html(posts: list[PostRecord], settings: Settings, path: Path, title: str, subtitle: str = "") -> Path:
+def export_html(posts: list[PostRecord], settings: Settings, path: Path, title: str, subtitle: str = "", img_dir: Optional[str] = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(build_html_report(posts, settings, title, subtitle), encoding="utf-8")
+    path.write_text(build_html_report(posts, settings, title, subtitle, img_dir), encoding="utf-8")
     return path
 
 

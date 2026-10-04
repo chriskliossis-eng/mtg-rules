@@ -138,12 +138,17 @@ def cmd_run(args) -> None:
         while True:
             started = time.time()
             _say(f"=== Εκτέλεση {datetime.now(ZoneInfo(settings.timezone)):%d/%m/%Y %H:%M:%S} ===")
-            results = _run_sources(settings, sources, dry_run=False, headed=args.headed, stop_before=stop_before, storage=storage)
-            _summary(results, dry_run=False)
-            if settings.archive.enabled:
-                from .archive import archive_pending
-                n = archive_pending(storage, settings, limit=200, progress=_say)
-                _say(f"archive.org: {n} νέα snapshots")
+            try:
+                results = _run_sources(settings, sources, dry_run=False, headed=args.headed, stop_before=stop_before, storage=storage)
+                _summary(results, dry_run=False)
+                if settings.archive.enabled:
+                    from .archive import archive_pending
+                    n = archive_pending(storage, settings, limit=50, progress=_say)
+                    _say(f"archive.org: {n} νέα snapshots")
+            except Exception as e:  # noqa: BLE001
+                if not args.loop:
+                    raise
+                _say(f"ΣΦΑΛΜΑ σε αυτή την εκτέλεση: {type(e).__name__}: {e}. Συνεχίζω στην επόμενη.")
             if not args.loop:
                 break
             wait = max(30, every - (time.time() - started))
@@ -217,6 +222,7 @@ def cmd_export(args) -> None:
         period = f"_{d_from:%Y%m%d}" if d_from else "_start"
         period += f"-{d_to:%Y%m%d}" if d_to else "-now"
     base = out_dir / f"fbwatch_{label}{period}_{stamp}"
+    ext = lambda e: base.with_name(base.name + e)  # noqa: E731  (όχι with_suffix: τα ids μπορεί να έχουν τελείες)
     title = f"Δημόσια posts: {label}"
     subtitle = f"Περίοδος: {d_from:%d/%m/%Y} έως {d_to:%d/%m/%Y}" if (d_from and d_to) else (
         f"Από {d_from:%d/%m/%Y}" if d_from else (f"Έως {d_to:%d/%m/%Y}" if d_to else "Όλη η συλλογή"))
@@ -225,15 +231,15 @@ def cmd_export(args) -> None:
             "date_field": args.date_field}
     made = []
     if "csv" in formats:
-        made.append(export_csv(posts, base.with_suffix(".csv")))
+        made.append(export_csv(posts, ext(".csv")))
     if "json" in formats:
-        made.append(export_json(posts, base.with_suffix(".json"), meta))
+        made.append(export_json(posts, ext(".json"), meta))
     if "html" in formats or "pdf" in formats:
-        html_path = export_html(posts, settings, base.with_suffix(".html"), title, subtitle)
+        html_path = export_html(posts, settings, ext(".html"), title, subtitle)
         if "html" in formats:
             made.append(html_path)
         if "pdf" in formats:
-            made.append(export_pdf(html_path, base.with_suffix(".pdf"), settings))
+            made.append(export_pdf(html_path, ext(".pdf"), settings))
             if "html" not in formats:
                 html_path.unlink(missing_ok=True)
     _say(f"{len(posts)} posts εξήχθησαν:")
@@ -352,6 +358,10 @@ def main(argv: Optional[list[str]] = None) -> None:
         sys.exit("\nΔιακοπή από τον χρήστη.")
     except ValueError as e:
         sys.exit(f"Σφάλμα: {e}")
+    except Exception as e:  # noqa: BLE001
+        if args.verbose:
+            raise
+        sys.exit(f"Σφάλμα: {type(e).__name__}: {e}  (τρέξε με -v για λεπτομέρειες)")
 
 
 if __name__ == "__main__":

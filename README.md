@@ -142,8 +142,8 @@ data/
   screenshots/<πηγή>/<post_id>__<ώρα λήψης>.png
   html/<πηγή>/<post_id>__<ώρα λήψης>.html     το HTML του post με επικεφαλίδα λήψης
   exports/                   CSV, JSON, HTML, PDF από την εντολή export
-  elegxoi/<ημερομηνία>_<όνομα>/   ένας φάκελος ανά έλεγχο: posts.csv, posts.json,
-                             anafora.html, anafora.pdf, screenshots/, elegxos.json
+  elegxoi/<ημερομηνία>_<όνομα>/   ένας φάκελος ανά έλεγχο, αυτοτελής (μεταφέρεται/συμπιέζεται):
+                             posts.csv, posts.json, anafora.html, anafora.pdf, screenshots/, elegxos.json
   debug/                     μόνο με check --dump
 ```
 

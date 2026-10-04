@@ -68,3 +68,18 @@ def test_export_csv_json_html(settings, tmp_path):
     html = build_html_report(posts, settings, "Τίτλος", "Υπότιτλος")
     assert "Τίτλος" in html and "screenshots/a/1.png" in html and "<img" in html
     assert "<script" not in html  # το κείμενο των posts είναι escaped
+
+
+def test_archive_retry_backoff(storage):
+    storage.insert_post(_rec("1", "a", None))
+    storage.insert_post(_rec("2", "a", None))
+    assert {p.post_id for p in storage.posts_without_archive(now="2026-10-04T12:00:00+00:00")} == {"1", "2"}
+    storage.update_post_fields("1", archive_requested_at="2026-10-04T11:00:00+00:00")  # απέτυχε πριν 1 ώρα
+    assert {p.post_id for p in storage.posts_without_archive(now="2026-10-04T12:00:00+00:00")} == {"2"}
+    assert {p.post_id for p in storage.posts_without_archive(now="2026-10-06T12:00:00+00:00")} == {"1", "2"}
+
+
+def test_html_report_relative_images(settings):
+    posts = [_rec("1", "a", "2026-10-01T09:00:00+03:00", screenshot_path="screenshots/a/1__x.png")]
+    html = build_html_report(posts, settings, "T", "", img_dir="screenshots")
+    assert 'src="screenshots/1__x.png"' in html and "file://" not in html

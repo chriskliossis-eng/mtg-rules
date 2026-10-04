@@ -88,6 +88,12 @@ def parse_facebook_date(
     raw = " ".join(text.strip().split())
     low = _strip_accents(raw)
 
+    # Πλήρες ISO (π.χ. από <time datetime="2026-10-04T07:15:00Z">): σεβάσου το offset αν υπάρχει.
+    try:
+        iso = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        return iso.astimezone(zone) if iso.tzinfo else iso.replace(tzinfo=zone)
+    except ValueError:
+        pass
     m = _ISO_RE.search(raw)
     if m:
         y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
