@@ -76,7 +76,7 @@ class App(tk.Tk):
     def __init__(self, config_path: Path):
         super().__init__()
         self.title(f"fbwatch {__version__} – Δημόσια posts Facebook")
-        self.geometry("1100x760")
+        self.geometry("1220x800")
         self.minsize(900, 600)
         self.config_path = config_path
         self.settings: Settings = self._load_settings()
