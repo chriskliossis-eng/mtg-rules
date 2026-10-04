@@ -241,6 +241,25 @@ def cmd_export(args) -> None:
         _say(f"  {m}")
 
 
+def cmd_job(args) -> None:
+    from .jobs import run_job
+    from .storage import Storage
+
+    settings = _settings(args)
+    sources = _sources(settings, args.source)
+    d_from, d_to = _dates(args, settings.timezone)
+    with Storage(settings.db_path) as storage:
+        res = run_job(settings, storage, args.name, sources, d_from, d_to, collect=not args.no_collect,
+                      headed=args.headed, make_pdf=not args.no_pdf, progress=_say)
+    _say(f"Φάκελος ελέγχου: {res.folder}")
+
+
+def cmd_gui(args) -> None:
+    from . import gui
+
+    gui.main(args.config)
+
+
 def cmd_status(args) -> None:
     from .storage import Storage
 
@@ -305,6 +324,19 @@ def build_parser() -> argparse.ArgumentParser:
             s.add_argument("--format", "-f", choices=["csv", "json", "html", "pdf", "all"], default="all")
             s.add_argument("--out", "-o", help="Φάκελος εξαγωγής (προεπιλογή data/exports)")
         s.set_defaults(func=fn)
+
+    s = sub.add_parser("job", help="Έλεγχος: συλλογή + εξαγωγή διαστήματος σε δικό του φάκελο")
+    s.add_argument("--name", required=True)
+    s.add_argument("--source", "-s", action="append")
+    s.add_argument("--from", dest="date_from")
+    s.add_argument("--to", dest="date_to")
+    s.add_argument("--no-collect", action="store_true", help="Μόνο εξαγωγή από ό,τι υπάρχει ήδη")
+    s.add_argument("--no-pdf", action="store_true")
+    s.add_argument("--headed", action="store_true")
+    s.set_defaults(func=cmd_job)
+
+    s = sub.add_parser("gui", help="Γραφικό περιβάλλον")
+    s.set_defaults(func=cmd_gui)
 
     s = sub.add_parser("status", help="Πλήθη και πρόσφατες εκτελέσεις")
     s.set_defaults(func=cmd_status)

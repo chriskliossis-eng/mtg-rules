@@ -17,7 +17,6 @@ echo "[3/4] Κατέβασμα του browser (Chromium, ~150MB)..."
 echo "[4/4] Ρυθμίσεις..."
 [ -f config.yaml ] || cp config.example.yaml config.yaml
 echo
-echo "Η εγκατάσταση ολοκληρώθηκε. Ανοίγει το αρχείο ρυθμίσεων (config.yaml)."
-echo "Στην ενότητα 'sources' βάλε τις σελίδες Facebook που θέλεις, αποθήκευσε και κλείσε."
-open -t config.yaml
-read -p "Πάτα Enter για κλείσιμο"
+echo "Η εγκατάσταση ολοκληρώθηκε. Ανοίγει το πρόγραμμα."
+echo "Από εδώ και πέρα, για να το ανοίγεις: διπλό κλικ στο 0_programma.command"
+.venv/bin/python -m fbwatch gui

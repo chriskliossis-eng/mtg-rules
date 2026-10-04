@@ -32,8 +32,9 @@ def storage(settings):
         yield st
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def browser_context():
+    # Ανά test, ώστε tests που ανοίγουν δικό τους browser (jobs) να μη συγκρούονται με ανοιχτό Playwright loop.
     from fbwatch.browser import open_browser
     from fbwatch.config import BrowserSettings
 

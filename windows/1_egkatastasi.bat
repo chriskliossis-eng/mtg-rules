@@ -29,10 +29,8 @@ if errorlevel 1 ( echo Σφάλμα στο κατέβασμα του browser. & 
 echo [4/4] Ρυθμίσεις...
 if not exist "config.yaml" copy /y config.example.yaml config.yaml >nul
 echo.
-echo Η εγκατάσταση ολοκληρώθηκε.
-echo Τώρα θα ανοίξει το αρχείο ρυθμίσεων (config.yaml).
-echo Στο κάτω μέρος, στην ενότητα "sources", βάλε τις σελίδες Facebook που θέλεις.
-echo Αποθήκευσε (Ctrl+S) και κλείσε το Σημειωματάριο.
+echo Η εγκατάσταση ολοκληρώθηκε. Ανοίγει το πρόγραμμα.
+echo Από εδώ και πέρα, για να το ανοίγεις: διπλό κλικ στο 0_programma.bat
 echo.
 pause
-start notepad config.yaml
+start "" ".venv\Scripts\pythonw.exe" -m fbwatch gui

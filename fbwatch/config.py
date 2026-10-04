@@ -164,3 +164,71 @@ def load_settings(path: str | Path) -> Settings:
         sources=sources,
         config_path=path.resolve(),
     )
+
+
+CONFIG_HEADER = """# ======================================================================
+#  fbwatch - ΡΥΘΜΙΣΕΙΣ
+#  Οι σελίδες (sources) διαχειρίζονται και από το παράθυρο του προγράμματος.
+#  Μπορείς να τις αλλάξεις και εδώ: id (λατινικά, χωρίς κενά), kind: page, url, label.
+# ======================================================================
+"""
+
+
+def slug_from_url(url: str, existing: Optional[set[str]] = None) -> str:
+    """Φτιάχνει id πηγής από το URL της σελίδας (facebook.com/ertnews -> ertnews)."""
+    from urllib.parse import urlparse, parse_qs
+
+    p = urlparse(url.strip())
+    path = p.path.strip("/")
+    base = ""
+    if path.startswith("profile.php") or path.startswith("people/"):
+        q = parse_qs(p.query)
+        base = "id_" + q.get("id", [""])[0] if "id" in q else path.split("/")[-1]
+    elif path:
+        base = path.split("/")[0]
+    base = re.sub(r"[^A-Za-z0-9_.-]+", "_", base).strip("._-") or "page"
+    base = base[:40]
+    existing = existing or set()
+    cand, n = base, 2
+    while cand in existing:
+        cand, n = f"{base}_{n}", n + 1
+    return cand
+
+
+def normalize_page_url(url: str) -> str:
+    """Καθαρίζει ένα URL σελίδας: https, www.facebook.com, χωρίς παραμέτρους παρακολούθησης."""
+    from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+
+    u = url.strip()
+    if not u:
+        raise ConfigError("Κενή διεύθυνση")
+    if not re.match(r"^https?://", u):
+        u = "https://" + u
+    p = urlparse(u)
+    host = p.netloc.lower()
+    if "facebook.com" not in host and "fb.com" not in host:
+        raise ConfigError("Η διεύθυνση πρέπει να είναι σελίδα του Facebook (facebook.com/...)")
+    q = parse_qs(p.query)
+    keep = {k: v[0] for k, v in q.items() if k in ("id",)}
+    path = p.path.rstrip("/") or "/"
+    return urlunparse(("https", "www.facebook.com", path, "", urlencode(keep), ""))
+
+
+def save_sources(settings: Settings, sources: list[Source]) -> None:
+    """Γράφει τη λίστα πηγών στο config.yaml, κρατώντας τις υπόλοιπες ρυθμίσεις ως έχουν."""
+    if settings.config_path is None:
+        raise ConfigError("Δεν υπάρχει διαδρομή config για αποθήκευση")
+    path = settings.config_path
+    raw: dict[str, Any] = {}
+    if path.exists():
+        with path.open("r", encoding="utf-8") as f:
+            raw = yaml.safe_load(f) or {}
+    raw["sources"] = [
+        {"id": s.id, "kind": s.kind, "url": s.url, "label": s.label} for s in sources
+    ]
+    ordered = {"sources": raw.pop("sources")}
+    ordered.update(raw)
+    with path.open("w", encoding="utf-8") as f:
+        f.write(CONFIG_HEADER)
+        yaml.safe_dump(ordered, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+    settings.sources = list(sources)

@@ -41,6 +41,19 @@ CREATE TABLE IF NOT EXISTS captures (
     sha256 TEXT,
     FOREIGN KEY(post_id) REFERENCES posts(post_id)
 );
+CREATE TABLE IF NOT EXISTS jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    date_from TEXT,
+    date_to TEXT,
+    source_ids TEXT NOT NULL,
+    folder TEXT,
+    status TEXT,
+    posts_count INTEGER DEFAULT 0,
+    posts_new INTEGER DEFAULT 0,
+    message TEXT
+);
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL,
@@ -212,3 +225,27 @@ class Storage:
 
     def recent_runs(self, limit: int = 20) -> list[sqlite3.Row]:
         return list(self.conn.execute("SELECT * FROM runs ORDER BY id DESC LIMIT ?", (limit,)))
+
+    # --- jobs (έλεγχοι) ------------------------------------------------
+    def insert_job(self, name: str, created_at: str, date_from: Optional[str], date_to: Optional[str],
+                   source_ids: list[str], folder: Optional[str]) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO jobs(name, created_at, date_from, date_to, source_ids, folder, status) VALUES (?,?,?,?,?,?,?)",
+            (name, created_at, date_from, date_to, ",".join(source_ids), folder, "running"),
+        )
+        self.conn.commit()
+        return int(cur.lastrowid)
+
+    def finish_job(self, job_id: int, status: str, posts_count: int, posts_new: int, message: str = "") -> None:
+        self.conn.execute(
+            "UPDATE jobs SET status=?, posts_count=?, posts_new=?, message=? WHERE id=?",
+            (status, posts_count, posts_new, message, job_id),
+        )
+        self.conn.commit()
+
+    def jobs(self, limit: int = 200) -> list[sqlite3.Row]:
+        return list(self.conn.execute("SELECT * FROM jobs ORDER BY id DESC LIMIT ?", (limit,)))
+
+    def delete_job(self, job_id: int) -> None:
+        self.conn.execute("DELETE FROM jobs WHERE id=?", (job_id,))
+        self.conn.commit()
