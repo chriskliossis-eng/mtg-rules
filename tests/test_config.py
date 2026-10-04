@@ -27,3 +27,10 @@ def test_rejects_bad_config(tmp_path):
         load_settings(cfg)
     with pytest.raises(ConfigError, match="Δεν βρέθηκε"):
         load_settings(tmp_path / "missing.yaml")
+
+
+def test_unknown_timezone_gives_clear_error(tmp_path):
+    cfg = tmp_path / "c.yaml"
+    cfg.write_text("timezone: Mars/Olympus\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="ζώνη ώρας"):
+        load_settings(cfg)

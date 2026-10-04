@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 
@@ -141,13 +142,22 @@ def load_settings(path: str | Path) -> Settings:
     if dupes:
         raise ConfigError(f"Διπλά ids πηγών: {', '.join(sorted(dupes))}")
 
+    timezone = str(raw.get("timezone", "Europe/Athens"))
+    try:
+        ZoneInfo(timezone)
+    except ZoneInfoNotFoundError:
+        raise ConfigError(
+            f"Δεν βρέθηκε η ζώνη ώρας '{timezone}'. Στα Windows λείπουν τα δεδομένα ζωνών ώρας: "
+            "τρέξε ξανά την εγκατάσταση (1_egkatastasi.bat) ή δώσε 'pip install tzdata'."
+        ) from None
+
     data_dir = Path(raw.get("data_dir", "./data"))
     if not data_dir.is_absolute():
         data_dir = (path.parent / data_dir).resolve()
 
     return Settings(
         data_dir=data_dir,
-        timezone=str(raw.get("timezone", "Europe/Athens")),
+        timezone=timezone,
         browser=_build(BrowserSettings, raw.get("browser"), "browser"),
         monitor=_build(MonitorSettings, monitor_raw, "monitor"),
         archive=_build(ArchiveSettings, raw.get("archive"), "archive"),

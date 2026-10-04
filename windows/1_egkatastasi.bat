@@ -21,7 +21,7 @@ if not exist ".venv" %PY% -m venv .venv
 if errorlevel 1 ( echo Σφάλμα στη δημιουργία περιβάλλοντος. & pause & exit /b 1 )
 echo [2/4] Εγκατάσταση του fbwatch...
 ".venv\Scripts\python.exe" -m pip install --quiet --upgrade pip
-".venv\Scripts\python.exe" -m pip install --quiet -e .
+".venv\Scripts\python.exe" -m pip install --quiet -e . tzdata
 if errorlevel 1 ( echo Σφάλμα στην εγκατάσταση. Ελέγξε τη σύνδεση στο internet. & pause & exit /b 1 )
 echo [3/4] Κατέβασμα του browser (Chromium, ~150MB)...
 ".venv\Scripts\python.exe" -m playwright install chromium

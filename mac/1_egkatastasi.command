@@ -11,7 +11,7 @@ echo "[1/4] Δημιουργία περιβάλλοντος Python..."
 [ -d .venv ] || python3 -m venv .venv || { read -p "Σφάλμα. Enter για έξοδο"; exit 1; }
 echo "[2/4] Εγκατάσταση του fbwatch..."
 .venv/bin/python -m pip install --quiet --upgrade pip
-.venv/bin/python -m pip install --quiet -e . || { echo "Σφάλμα εγκατάστασης. Ελέγξε το internet."; read -p "Enter για έξοδο"; exit 1; }
+.venv/bin/python -m pip install --quiet -e . tzdata || { echo "Σφάλμα εγκατάστασης. Ελέγξε το internet."; read -p "Enter για έξοδο"; exit 1; }
 echo "[3/4] Κατέβασμα του browser (Chromium, ~150MB)..."
 .venv/bin/python -m playwright install chromium || { read -p "Σφάλμα. Enter για έξοδο"; exit 1; }
 echo "[4/4] Ρυθμίσεις..."
