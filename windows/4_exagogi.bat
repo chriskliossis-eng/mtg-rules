@@ -1,19 +1,14 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0.."
-echo ============================================
-echo   fbwatch - Εξαγωγή περιόδου (CSV, JSON, HTML, PDF)
-echo ============================================
-echo Γράψε ημερομηνίες με τη μορφή ΗΗ/ΜΜ/ΕΕΕΕ, π.χ. 01/09/2026
-echo Άφησε κενό και πάτα Enter για "χωρίς όριο".
+echo fbwatch - Exagogi periodou (CSV, JSON, HTML, PDF)
+echo Grapse imerominies me ti morfi HH/MM/EEEE, p.x. 01/09/2026. Keno = xoris orio.
 echo.
-set /p APO=Από ημερομηνία: 
-set /p EOS=Έως ημερομηνία: 
+set /p APO=Apo imerominia: 
+set /p EOS=Eos imerominia: 
 set ARGS=
 if not "%APO%"=="" set ARGS=%ARGS% --from %APO%
 if not "%EOS%"=="" set ARGS=%ARGS% --to %EOS%
 ".venv\Scripts\fbwatch.exe" export --format all %ARGS%
 echo.
-echo Τα αρχεία είναι στον φάκελο data\exports (ανοίγει τώρα).
 start "" "data\exports"
 pause

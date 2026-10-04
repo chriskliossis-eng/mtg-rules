@@ -1,14 +1,10 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0.."
-echo ============================================
-echo   fbwatch - Έλεγχος πρόσβασης (χωρίς αποθήκευση)
-echo ============================================
-echo Θα ανοίξει ένα παράθυρο browser για κάθε σελίδα. Μην το αγγίξεις, κλείνει μόνο του.
+echo fbwatch - Elegxos prosvasis (xoris apothikeusi). Tha anoixei browser, min ton aggixeis.
 echo.
 ".venv\Scripts\fbwatch.exe" check --headed --dump
 echo.
-echo Αν στη "Σύνοψη" βλέπεις "ok" με αριθμό posts, όλα καλά: τρέξε το 3_syllogi.bat
-echo Αν βλέπεις "empty", "login_wall" ή "unavailable", στείλε τα αρχεία από τον φάκελο data\debug
+echo An sti "Synopsi" vlepeis "ok" me arithmo posts, ola kala.
+echo An vlepeis "empty", "login_wall" i "unavailable", steile ta arxeia apo ton fakelo data\debug
 echo.
 pause
