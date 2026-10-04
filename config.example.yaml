@@ -38,6 +38,7 @@ browser:
   executable_path: null   # δικός σου Chrome/Chromium, αλλιώς αυτός του Playwright
   viewport_width: 560
   viewport_height: 1400
+  plugin_height: 3000     # ύψος που ζητάμε από το plugin του Facebook (περισσότερα posts αρχικά)
 
 monitor:
   max_posts_per_run: 50             # ανώτατο πλήθος posts ανά σελίδα σε κάθε εκτέλεση

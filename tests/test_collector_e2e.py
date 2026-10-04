@@ -82,3 +82,27 @@ def test_dump_writes_debug_files(browser_context, settings, storage):
     assert res.status.kind == "ok"
     files = sorted(x.suffix for x in dump.iterdir())
     assert files == [".html", ".png"]
+
+
+def test_inner_scroller_lazy_load_is_followed(browser_context, settings, storage):
+    """Posts μέσα σε εσωτερικό scrollable container που φορτώνει ασύγχρονα σε δύο δόσεις."""
+    msgs = []
+    res = collect_source(browser_context, _page_source("inner", "page_plugin_inner.html"), settings, storage, progress=msgs.append)
+    assert res.status.kind == "ok"
+    assert res.posts_seen == 4, msgs
+    assert any("scroll 1:" in m and "εσωτερικό" in m for m in msgs)
+
+
+def test_content_inside_iframe_is_found(browser_context, settings, storage):
+    msgs = []
+    res = collect_source(browser_context, _page_source("ifr", "page_plugin_iframe.html"), settings, storage, progress=msgs.append)
+    assert res.status.kind == "ok" and res.posts_seen == 4, msgs
+    assert any("iframe" in m for m in msgs)
+    p = storage.get_post("post_1001")
+    assert (settings.data_dir / p.screenshot_path).stat().st_size > 1000
+
+
+def test_no_more_posts_message(browser_context, settings, storage):
+    msgs = []
+    collect_source(browser_context, _page_source(), settings, storage, progress=msgs.append)
+    assert any("δεν έδωσε παλαιότερα posts" in m for m in msgs)

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="el"><head><meta charset="utf-8"><title>Fixture: Page Plugin με εσωτερικό scroller</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;width:500px}
+#scroller{height:700px;overflow-y:auto;border:1px solid #999}
+.userContentWrapper{border:1px solid #ddd;margin:8px;padding:10px;min-height:400px}
+</style></head>
+<body>
+<div id="scroller">
+  <div class="userContentWrapper"><h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <a href="/ertnews/posts/1"><abbr data-utime="1759564800">4 Οκτ</abbr></a><div class="userContent"><p>Post 1</p></div></div>
+  <div class="userContentWrapper"><h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+    <a href="/ertnews/posts/2"><abbr data-utime="1759478400">3 Οκτ</abbr></a><div class="userContent"><p>Post 2</p></div></div>
+</div>
+<script>
+// Lazy load ΜΟΝΟ στο scroll του εσωτερικού container, σε δύο δόσεις, με καθυστέρηση 900ms (ασύγχρονα).
+let batch = 0;
+const sc = document.getElementById('scroller');
+sc.addEventListener('scroll', () => {
+  if (batch >= 2) return;
+  if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 5) {
+    batch++;
+    const n = batch;
+    setTimeout(() => {
+      sc.insertAdjacentHTML('beforeend', `<div class="userContentWrapper"><h5><a href="https://www.facebook.com/ertnews/">ΕΡΤ News</a></h5>
+        <a href="/ertnews/posts/${10+n}"><abbr data-utime="${1759478400 - n*86400}">παλιό ${n}</abbr></a><div class="userContent"><p>Παλαιότερο post ${n}</p></div></div>`);
+    }, 900);
+  }
+});
+</script>
+</body></html>

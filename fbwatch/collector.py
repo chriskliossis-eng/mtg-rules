@@ -16,7 +16,7 @@ from playwright.sync_api import BrowserContext, Page, TimeoutError as PWTimeout
 
 from .config import Settings, Source
 from .dates import to_iso
-from .extract import FoundPost, PageStatus, detect_status, find_posts, post_outer_html, screenshot_post, scroll_down
+from .extract import FoundPost, PageStatus, best_frame, detect_status, find_posts, post_outer_html, screenshot_post, scroll_down
 from .fburls import page_plugin_url, post_id_from_permalink, post_plugin_url, normalize_permalink
 from .storage import PostRecord, Storage
 
@@ -56,7 +56,7 @@ def _target_url(source: Source, settings: Settings) -> str:
     if source.plugin_url:
         return source.plugin_url
     if source.kind == "page":
-        return page_plugin_url(source.url, settings.browser.locale, settings.browser.viewport_height)
+        return page_plugin_url(source.url, settings.browser.locale, settings.browser.plugin_height)
     return post_plugin_url(source.url, settings.browser.locale)
 
 
@@ -69,7 +69,7 @@ def _goto(page: Page, url: str, settings: Settings) -> None:
     page.wait_for_timeout(settings.browser.settle_ms)
 
 
-def _capture_files(page: Page, post: FoundPost, source: Source, settings: Settings, when: datetime) -> tuple[Optional[str], Optional[str], Optional[str]]:
+def _capture_files(page, post: FoundPost, source: Source, settings: Settings, when: datetime) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Screenshot + HTML για ένα post. Επιστρέφει (screenshot_path, html_path, sha256) σχετικά με data_dir."""
     stamp = when.strftime("%Y%m%d_%H%M%S")
     base = f"{_safe_name(post.post_id)}__{stamp}"
@@ -92,7 +92,7 @@ def _capture_files(page: Page, post: FoundPost, source: Source, settings: Settin
     return str(shot_path.relative_to(settings.data_dir)), html_rel, digest
 
 
-def _store(post: FoundPost, source: Source, settings: Settings, storage: Storage, page: Page, when: datetime, result: SourceResult) -> None:
+def _store(post: FoundPost, source: Source, settings: Settings, storage: Storage, page, when: datetime, result: SourceResult) -> None:
     seen_iso = to_iso(when)
     existing = storage.get_post(post.post_id)
     if existing is None:
@@ -137,11 +137,19 @@ def collect_source(
     page = context.new_page()
     try:
         _goto(page, url, settings)
+        target, posts = best_frame(page, settings.timezone, when)
+        if target is not page.main_frame:
+            say(f"[{source.id}] Το περιεχόμενο βρέθηκε σε εσωτερικό πλαίσιο (iframe)")
         found: dict[str, FoundPost] = {}
         stale_rounds = 0
+        max_stale = 4
         max_rounds = settings.monitor.max_scroll_rounds if source.kind == "page" else 1
+        rounds_done = 0
+        last_info: dict = {}
         for rnd in range(max_rounds):
-            posts = find_posts(page, settings.timezone, when)
+            if rnd > 0:
+                posts = find_posts(target, settings.timezone, when)
+            rounds_done = rnd + 1
             new_here = [p for p in posts if p.post_id not in found]
             for p in posts:
                 found[p.post_id] = p  # κράτα το πιο πρόσφατο marker
@@ -154,17 +162,22 @@ def collect_source(
             if stop_before and dated and min(dated) < stop_before:
                 say(f"[{source.id}] Βρέθηκαν posts παλαιότερα από {stop_before:%d/%m/%Y}, σταματώ το scroll")
                 break
+            if source.kind != "page":
+                break
             if not new_here:
                 stale_rounds += 1
-                if stale_rounds >= 3:
+                if stale_rounds >= max_stale:
                     break
             else:
                 stale_rounds = 0
-            if source.kind != "page":
-                break
-            grew = scroll_down(page, settings.browser.settle_ms)
-            if not grew and not new_here and rnd > 0:
-                break
+            # Στους "στάσιμους" γύρους περίμενε περισσότερο: το plugin φορτώνει ασύγχρονα.
+            last_info = scroll_down(target, settings.browser.settle_ms * (1 + stale_rounds))
+            say(f"[{source.id}] scroll {rnd + 1}: {len(found)} posts, ύψος {last_info['before']}→{last_info['after']}"
+                + (f", εσωτερικό {last_info['inner_before']}→{last_info['inner_after']}" if last_info['scrollers'] else ", χωρίς εσωτερικό scroller")
+                + ("" if last_info["grew"] or new_here else " (τίποτα νέο)"))
+        if source.kind == "page" and found and rounds_done > 1 and last_info and not last_info.get("grew"):
+            say(f"[{source.id}] Το Facebook δεν έδωσε παλαιότερα posts μετά από {rounds_done} γύρους scroll. "
+                "Χωρίς σύνδεση το plugin δείχνει μόνο τα πιο πρόσφατα, γι' αυτό η συλλογή πρέπει να γίνεται τακτικά.")
 
         result.status = detect_status(page, len(found))
         result.posts_seen = len(found)
@@ -179,7 +192,7 @@ def collect_source(
             return result
 
         # Τελικό πέρασμα για φρέσκους markers (το DOM μπορεί να ξαναχτίστηκε στο scroll).
-        posts = find_posts(page, settings.timezone, when)
+        posts = find_posts(target, settings.timezone, when)
         by_id = {p.post_id: p for p in posts}
         ordered = sorted(found.values(), key=lambda p: (p.posted_at or when), reverse=True)
         dated = [p.posted_at for p in ordered if p.posted_at]
@@ -194,7 +207,7 @@ def collect_source(
             if stop_before and p.posted_at and p.posted_at < stop_before:
                 continue
             try:
-                _store(p, source, settings, storage, page, when, result)
+                _store(p, source, settings, storage, target, when, result)
             except Exception as e:  # ένα post δεν πρέπει να ρίχνει όλη την εκτέλεση
                 msg = f"{p.post_id}: {type(e).__name__}: {e}"
                 result.errors.append(msg)

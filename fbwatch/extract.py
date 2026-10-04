@@ -128,20 +128,35 @@ FIND_POSTS_JS = r"""
 
 SCROLL_JS = r"""
 () => {
-  const before = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  const height = () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  const before = height();
   window.scrollTo(0, before);
   // Scroll και όλα τα εσωτερικά scrollable στοιχεία (το plugin έχει δικό του container).
+  const scrollers = [];
   for (const el of document.querySelectorAll('*')) {
     const st = getComputedStyle(el);
     if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 10) {
       el.scrollTop = el.scrollHeight;
+      scrollers.push(el);
     }
   }
-  return before;
+  // Μερικά widgets φορτώνουν μόνο με πραγματικά wheel/scroll events.
+  const targets = scrollers.length ? scrollers : [document.scrollingElement || document.body];
+  for (const el of targets) {
+    try {
+      el.dispatchEvent(new WheelEvent('wheel', {deltaY: 2000, bubbles: true, cancelable: true}));
+      el.dispatchEvent(new Event('scroll', {bubbles: true}));
+    } catch (e) {}
+  }
+  window.dispatchEvent(new Event('scroll'));
+  return {before, scrollers: scrollers.length,
+          innerMax: scrollers.length ? Math.max(...scrollers.map(e => e.scrollHeight)) : 0};
 }
 """
 
 PAGE_HEIGHT_JS = "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)"
+INNER_MAX_JS = """() => { let m = 0; for (const el of document.querySelectorAll('*')) { const st = getComputedStyle(el);
+  if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 10) m = Math.max(m, el.scrollHeight); } return m; }"""
 
 LOGIN_WALL_PATTERNS = [
     r"you must log in", r"log in to continue", r"log in or sign up", r"see more of .* on facebook",
@@ -195,7 +210,8 @@ def detect_status(page: Page, posts_found: int) -> PageStatus:
     return PageStatus("ok")
 
 
-def find_posts(page: Page, tz: str, now: Optional[datetime] = None) -> list[FoundPost]:
+def find_posts(page, tz: str, now: Optional[datetime] = None) -> list[FoundPost]:
+    """Δέχεται Page ή Frame."""
     raw = page.evaluate(
         FIND_POSTS_JS,
         {
@@ -229,21 +245,49 @@ def find_posts(page: Page, tz: str, now: Optional[datetime] = None) -> list[Foun
     return posts
 
 
-def scroll_down(page: Page, settle_ms: int) -> bool:
-    """Scroll στο τέλος. Επιστρέφει True αν άλλαξε το ύψος της σελίδας (φορτώθηκε κάτι νέο)."""
-    before = page.evaluate(SCROLL_JS)
-    page.wait_for_timeout(settle_ms)
-    after = page.evaluate(PAGE_HEIGHT_JS)
-    return after > before
+def scroll_down(target, settle_ms: int) -> dict:
+    """Scroll στο τέλος (παράθυρο + εσωτερικοί scrollers + wheel events).
+
+    Επιστρέφει {"grew": bool, "before": int, "after": int, "scrollers": int, "inner_before": int, "inner_after": int}.
+    """
+    info = target.evaluate(SCROLL_JS)
+    try:
+        target.page.keyboard.press("End") if hasattr(target, "page") else target.keyboard.press("End")
+    except Exception:  # noqa: BLE001
+        pass
+    target.wait_for_timeout(settle_ms)
+    try:
+        target.wait_for_load_state("networkidle", timeout=4000)
+    except Exception:  # noqa: BLE001
+        pass
+    after = target.evaluate(PAGE_HEIGHT_JS)
+    inner_after = target.evaluate(INNER_MAX_JS)
+    grew = after > info["before"] or inner_after > info["innerMax"]
+    return {"grew": grew, "before": info["before"], "after": after, "scrollers": info["scrollers"],
+            "inner_before": info["innerMax"], "inner_after": inner_after}
 
 
-def screenshot_post(page: Page, marker: str, path, settle_ms: int) -> None:
-    loc = page.locator(f"[data-fbwatch-id='{marker}']").first
+def best_frame(page: Page, tz: str, now: Optional[datetime] = None):
+    """Το plugin μπορεί να βάλει το περιεχόμενο σε εσωτερικό iframe. Επιστρέφει (frame, posts) με τα περισσότερα posts."""
+    best, best_posts = page.main_frame, []
+    for fr in page.frames:
+        try:
+            posts = find_posts(fr, tz, now)
+        except Exception:  # noqa: BLE001
+            continue
+        if len(posts) > len(best_posts):
+            best, best_posts = fr, posts
+    return best, best_posts
+
+
+def screenshot_post(target, marker: str, path, settle_ms: int) -> None:
+    """target: Page ή Frame."""
+    loc = target.locator(f"[data-fbwatch-id='{marker}']").first
     loc.scroll_into_view_if_needed()
-    page.wait_for_timeout(max(300, settle_ms // 2))  # άσε τις εικόνες να φορτώσουν
+    target.wait_for_timeout(max(300, settle_ms // 2))  # άσε τις εικόνες να φορτώσουν
     loc.screenshot(path=str(path), type="png")
 
 
-def post_outer_html(page: Page, marker: str) -> str:
-    loc = page.locator(f"[data-fbwatch-id='{marker}']").first
+def post_outer_html(target, marker: str) -> str:
+    loc = target.locator(f"[data-fbwatch-id='{marker}']").first
     return loc.evaluate("el => el.outerHTML")

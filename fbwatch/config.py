@@ -23,6 +23,7 @@ class BrowserSettings:
     slow_mo_ms: int = 0
     viewport_width: int = 560
     viewport_height: int = 1400
+    plugin_height: int = 3000  # ύψος που ζητάμε από το Page Plugin (περισσότερα posts στην αρχική φόρτωση)
     user_agent: Optional[str] = None
     timeout_ms: int = 45000
 
